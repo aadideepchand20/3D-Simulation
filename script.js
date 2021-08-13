@@ -1,6 +1,6 @@
 let canvas = document.getElementById("myCanvas")
 var ctx = canvas.getContext('2d');
-ctx.translate(200,200);
+ctx.translate((canvas.width/2),(canvas.height/2));
 
 let interval = setInterval(refresh, 100);
 
@@ -11,12 +11,12 @@ let angleZ = 0;
 let fNear = 0.1;
 let fFar = 1000;
 let fov = 90;
-let aspectratio = 1;
+let aspectratio = (canvas.width)/(canvas.height);
 let fovRad = 1 / Math.tan(toRadians(fov/2));
 
 
 function refresh () {
-  ctx.clearRect(-200, -200, 400, 400);
+  ctx.clearRect(-(canvas.width/2), -(canvas.width/2), canvas.width, canvas.height);
   angleX += toRadians(1);
   angleY += toRadians(3);
   angleZ += toRadians(5);
@@ -39,9 +39,9 @@ const cubeTris = [[{x:0 ,y:1 ,z:0}, {x:1 ,y:1 ,z:0}, {x:0 ,y:0 ,z:0}],
 function drawTriangle (points) {
   if (canvas.getContext) {
     ctx.beginPath();
-    ctx.moveTo(points[0].x * 200, points[0].y * 200);
-    ctx.lineTo(points[1].x * 200, points[1].y * 200);
-    ctx.lineTo(points[2].x * 200, points[2].y * 200);
+    ctx.moveTo(points[0].x * (canvas.width/2), points[0].y * (canvas.height/2));
+    ctx.lineTo(points[1].x * (canvas.width/2), points[1].y * (canvas.height/2));
+    ctx.lineTo(points[2].x * (canvas.width/2), points[2].y * (canvas.height/2));
     ctx.closePath();
     ctx.stroke();
   }
@@ -58,7 +58,7 @@ function draw3DPolygon (points) {
       triPoints.push(projectionMatrix(translatedTri));
     }
     for(k=0; k<triPoints.length; k++) {
-      ctx.fillRect((triPoints[k].x - 2.5) * 200,(triPoints[k].y - 2.5) * 200,5,5);
+      ctx.fillRect((triPoints[k].x - 2.5) * (canvas.width/2),(triPoints[k].y - 2.5) * (canvas.height/2),5,5);
     } 
     drawTriangle(triPoints);
     console.log(triPoints);
@@ -79,8 +79,8 @@ function translatePoint (point, axis, amount) {
 
 function projectionMatrix (point) {
   point = {x: point.x, y: point.y, z: point.z, m: 1};
-  var matrix = [[aspectratio * fovRad,0,0,0],
-                [0,fovRad,0,0],
+  var matrix = [[fovRad,0,0,0],
+                [0,aspectratio * fovRad,0,0],
                 [0,0,fFar / (fFar - fNear),1],
                 [0,0,(-(fFar) * fNear) / (fFar - fNear),0]]
   var x = (point.x * matrix[0][0]) + (point.y * matrix[1][0]) + (point.z * matrix[2][0]) + (point.m * matrix[3][0]);
