@@ -53,6 +53,8 @@ const cubeTris = [[{x:0 ,y:0 ,z:0}, {x:0 ,y:1 ,z:0}, {x:1 ,y:1 ,z:0}, {r:255, g:
 
 function drawTriangle (points, fill, colour) {
   if (canvas.getContext) {
+
+    //Draws triangle on canvas
     ctx.beginPath();
     ctx.moveTo(points[0].x * (canvas.width/2), points[0].y * (canvas.height/2));
     ctx.lineTo(points[1].x * (canvas.width/2), points[1].y * (canvas.height/2));
@@ -66,11 +68,13 @@ function drawTriangle (points, fill, colour) {
     */
 
     if(fill == 0) {
+      //Fills the triangle with the appropriate shade
       var fillColour = String("rgb(" + colour.r + "," + colour.g + "," + colour.b + ")");
       console.log(fillColour);
       ctx.fillStyle = fillColour
       ctx.fill();
     } else {
+      //Draws the triangle edge instead of filling it
       ctx.stroke();
     }
   }
@@ -81,37 +85,46 @@ function draw3DPolygon (points) {
   for(i=0; i<points.length; i++) {
     var triPoints = [];
     for (j=0; j<points[i].length - 1; j++) {
+      //Applies all rotation matrices to the point
       var translatedTri = rotationYMatrix(rotationXMatrix(rotationZMatrix(points[i][j])));
+      //Translates the points into view
       translatedTri = translatePoint(translatedTri, "z", 5);
+      //Adds the points to an array
       triPoints.push(translatedTri);
     }
     var normal = {x:0 ,y:0 ,z:0 };
     var line1 = {x:0 ,y:0 ,z:0 }; 
     var line2 = {x:0 ,y:0 ,z:0 };
 
+    //Calculates line 1 vector
     line1.x = triPoints[1].x - triPoints[0].x;
     line1.y = triPoints[1].y - triPoints[0].y;
     line1.z = triPoints[1].z - triPoints[0].z;
 
+    //Calculates line 2 vector
     line2.x = triPoints[2].x - triPoints[0].x;
     line2.y = triPoints[2].y - triPoints[0].y;
     line2.z = triPoints[2].z - triPoints[0].z;
 
+    //Calculates normal
     normal.x = (line1.y * line2.z) - (line1.z * line2.y);
     normal.y = (line1.z * line2.x) - (line1.x * line2.z);
     normal.z = (line1.x * line2.y) - (line1.y * line2.x);
 
+    //Normalises the normal
     var normaliser = Math.sqrt((normal.x * normal.x) + (normal.y * normal.y) + (normal.z * normal.z));
     normal.x /= normaliser;
     normal.y /= normaliser;
     normal.z /= normaliser;
 
+    //Checks if triangle is in view
     if((normal.x * (triPoints[0].x - cameraPos.x)) + 
         (normal.y * (triPoints[0].y - cameraPos.y)) + 
         (normal.z * (triPoints[0].z - cameraPos.z)) < 0){
 
       var directionalLight = {x: 0, y: 0, z: -1};
-
+      
+      //Normalises directional light
       var lightNormaliser = Math.sqrt((directionalLight.x * directionalLight.x) + (directionalLight.y * directionalLight.y) + (directionalLight.z * directionalLight.z));
       directionalLight.x /= lightNormaliser;
       directionalLight.y /= lightNormaliser;
@@ -133,13 +146,18 @@ function draw3DPolygon (points) {
       ctx.fill();
       */
 
+      //Checks similarity of the normal and light direction vectors by calculating dot product
       var dotProduct = (normal.x * directionalLight.x) + (normal.y * directionalLight.y) + (normal.z * directionalLight.z);
-      var colour = {r: getAlpha(dotProduct) * points[i][3].r, g: getAlpha(dotProduct) * points[i][3].g, b: getAlpha(dotProduct) * points[i][3].b};
 
+      //Adjusts colour according to dot product
+      var colour = {r: getColour(dotProduct) * points[i][3].r, g: getColour(dotProduct) * points[i][3].g, b: getColour(dotProduct) * points[i][3].b};
+
+      //Applies perspective projection matrix to the points
       for(k=0; k<triPoints.length; k++) {
-        ctx.fillRect((triPoints[k].x - 2.5) * (canvas.width/2),(triPoints[k].y - 2.5) * (canvas.height/2),5,5);
         triPoints[k] = perspectiveprojectionMatrix(triPoints[k]);
       } 
+
+      //Draws the triangle to the screen
       if(shadeMode == 0) {
         drawTriangle(triPoints, 0, colour);
       } else {
@@ -149,69 +167,82 @@ function draw3DPolygon (points) {
   }
 }
 
-function getAlpha (dotProduct) {
+function getColour (dotProduct) {
+  //Adjusts dot product
   dotProduct = Math.round(10 * dotProduct);
-  console.log(dotProduct);
-  var num = 0.5;
+  //Checks which value to return
   switch(10 - dotProduct) {
     case 0: 
-      num = 1;
+      return 1;
       break;
     case 1: 
-      num = 0.9;
+      return 0.9;
       break;
     case 2: 
-      num = 0.8;
+      return 0.8;
       break;
     case 3: 
-      num = 0.7;
+      return 0.7;
       break;
     case 4: 
-      num = 0.6;
+      return 0.6;
       break;
     case 5: 
-      num = 0.5;
+      return 0.5;
       break;
     case 6: 
-      num = 0.4;
+      return 0.4;
       break;
     case 7: 
-      num = 0.3;
+      return 0.3;
       break;
     case 8: 
-      num = 0.2;
+      return 0.2;
       break;
     case 9: 
-      num = 0.1;
+      return 0.1;
       break;
   }
-  return num
 }
 
 function translatePoint (point, axis, amount) {
+  //Checks what axis to translate the point on
   if(axis == "x") {
+    //Translates point relative to its previous position
     return {x: point.x + amount, y: point.y, z: point.z};
   } else if (axis == "y") {
+    //Translates point relative to its previous position
     return {x: point.x, y: point.y + amount, z: point.z};
   } else if (axis == "z") {
+    //Translates point relative to its previous position
     return {x: point.x, y: point.y, z: point.z + amount};
   } else {
+    //Translates point relative to its previous position
     return point;
   }
 }
 
+//Applies perspective projection matrix to turn the 3D points --> 2D points 
 function perspectiveprojectionMatrix (point) {
+  //Adds extra value to allow for matrix multiplication by 4x4
   point = {x: point.x, y: point.y, z: point.z, m: 1};
+  //Perspective Matrix
   var matrix = [[aspectratio * fovRad,0,0,0],
                 [0,fovRad,0,0],
                 [0,0,fFar / (fFar - fNear),1],
                 [0,0,(-(fFar) * fNear) / (fFar - fNear),0]]
+  //Calculates new x value
   var x = (point.x * matrix[0][0]) + (point.y * matrix[1][0]) + (point.z * matrix[2][0]) + (point.m * matrix[3][0]);
+  //Calculates new y value
   var y = (point.x * matrix[0][1]) + (point.y * matrix[1][1]) + (point.z * matrix[2][1]) + (point.m * matrix[3][1]);
+  //Calculates new z value
   var z = (point.x * matrix[0][2]) + (point.y * matrix[1][2]) + (point.z * matrix[2][2]) + (point.m * matrix[3][2]);
+  //Calculates 'w' value
   var w = (point.x * matrix[0][3]) + (point.y * matrix[1][3]) + (point.z * matrix[2][3]) + (point.m * matrix[3][3]);
 
+  //Checks whethe to normalise new points
   if(w != 0) {
+    //Normalises the new points
     return {x: x/w, y: y/w, z: z/w}; 
   } else {
     return {x: x, y: y, z: z};
@@ -228,37 +259,54 @@ function orthographicprojectionMatrix (point) {
 }
 
 function rotationXMatrix (point) {
+  //Rotation X Matrix
   var matrix = [[1,0,0],
                 [0, Math.cos(angleX), Math.sin(angleX)],
                 [0, -(Math.sin(angleX)), Math.cos(angleX)]]
+  //Calculates new x value
   var x = (point.x * matrix[0][0]) + (point.y * matrix[1][0]) + (point.z * matrix[2][0]);
+  //Calculates new y value
   var y = (point.x * matrix[0][1]) + (point.y * matrix[1][1]) + (point.z * matrix[2][1]);
+  //Calculates new z value
   var z = (point.x * matrix[0][2]) + (point.y * matrix[1][2]) + (point.z * matrix[2][2]);
   return {x: x, y: y, z: z};
 }
 
 function rotationYMatrix (point) {
+  //Rotation Y Matrix
   var matrix = [[Math.cos(angleY),0,Math.sin(angleY)],
                 [0,1,0],
                 [-(Math.sin(angleY)),0,Math.cos(angleY)]]
+  //Calculates new x value
   var x = (point.x * matrix[0][0]) + (point.y * matrix[1][0]) + (point.z * matrix[2][0]);
+  //Calculates new y value
   var y = (point.x * matrix[0][1]) + (point.y * matrix[1][1]) + (point.z * matrix[2][1]);
+  //Calculates new z value
   var z = (point.x * matrix[0][2]) + (point.y * matrix[1][2]) + (point.z * matrix[2][2]);
   return {x: x, y: y, z: z};
 }
 
 function rotationZMatrix (point) {
+  //Rotation Z Matrix
   var matrix = [[Math.cos(angleZ),Math.sin(angleZ), 0],
                 [-(Math.sin(angleZ)), Math.cos(angleZ), 0],
                 [0,0,1]]
+  //Calculates new x value
   var x = (point.x * matrix[0][0]) + (point.y * matrix[1][0]) + (point.z * matrix[2][0]);
+  //Calculates new y value
   var y = (point.x * matrix[0][1]) + (point.y * matrix[1][1]) + (point.z * matrix[2][1]);
+  //Calculates new z value
   var z = (point.x * matrix[0][2]) + (point.y * matrix[1][2]) + (point.z * matrix[2][2]);
   return {x: x, y: y, z: z};
 }
 
 draw3DPolygon(cubeTris);
 
+
+
+
+
+//Utilities
 function toDegrees (angle) {
   return angle * (180 / Math.PI);
 }
