@@ -9,6 +9,7 @@ let sliderFOV = document.getElementById("fov");
 let shadeMode = 0;
 
 let angleX = 0;
+let angleY = 0;
 let angleZ = 0;
 
 let fNear = 0.1;
@@ -24,30 +25,31 @@ sliderFOV.oninput = function() {
 
 function refresh () {
   ctx.clearRect(-(canvas.width/2), -(canvas.height/2), canvas.width, canvas.height);
-  angleZ += toRadians(5);
-  angleX += toRadians(2.5);
+  angleX += toRadians(4);
+  angleY += toRadians(5);
+  angleZ += toRadians(6);
   draw3DPolygon(cubeTris);
 }
 
 const cameraPos = {x:0 ,y: 0, z:0};
 
-const cubeTris = [[{x:0 ,y:0 ,z:0}, {x:0 ,y:1 ,z:0}, {x:1 ,y:1 ,z:0}, {r:0, g:0, b:0}],
-                  [{x:0 ,y:0 ,z:0}, {x:1 ,y:1 ,z:0}, {x:1 ,y:0 ,z:0}, {r:0, g:0, b:0}],
+const cubeTris = [[{x:0 ,y:0 ,z:0}, {x:0 ,y:1 ,z:0}, {x:1 ,y:1 ,z:0}, {r:255, g:0, b:0}],
+                  [{x:0 ,y:0 ,z:0}, {x:1 ,y:1 ,z:0}, {x:1 ,y:0 ,z:0}, {r:255, g:0, b:0}],
 
-                  [{x:1 ,y:0 ,z:0}, {x:1 ,y:1 ,z:0}, {x:1 ,y:1 ,z:1}, {r:0, g:0, b:0}],
-                  [{x:1 ,y:0 ,z:0}, {x:1 ,y:1 ,z:1}, {x:1 ,y:0 ,z:1}, {r:0, g:0, b:0}],
+                  [{x:1 ,y:0 ,z:0}, {x:1 ,y:1 ,z:0}, {x:1 ,y:1 ,z:1}, {r:255, g:255, b:0}],
+                  [{x:1 ,y:0 ,z:0}, {x:1 ,y:1 ,z:1}, {x:1 ,y:0 ,z:1}, {r:255, g:255, b:0}],
 
-                  [{x:1 ,y:0 ,z:1}, {x:1 ,y:1 ,z:1}, {x:0 ,y:1 ,z:1}, {r:0, g:0, b:0}],
-                  [{x:1 ,y:0 ,z:1}, {x:0 ,y:1 ,z:1}, {x:0 ,y:0 ,z:1}, {r:0, g:0, b:0}],
+                  [{x:1 ,y:0 ,z:1}, {x:1 ,y:1 ,z:1}, {x:0 ,y:1 ,z:1}, {r:255, g:0, b:255}],
+                  [{x:1 ,y:0 ,z:1}, {x:0 ,y:1 ,z:1}, {x:0 ,y:0 ,z:1}, {r:255, g:0, b:255}],
 
-                  [{x:0 ,y:0 ,z:1}, {x:0 ,y:1 ,z:1}, {x:0 ,y:1 ,z:0}, {r:0, g:0, b:0}],
-                  [{x:0 ,y:0 ,z:1}, {x:0 ,y:1 ,z:0}, {x:0 ,y:0 ,z:0}, {r:0, g:0, b:0}],
+                  [{x:0 ,y:0 ,z:1}, {x:0 ,y:1 ,z:1}, {x:0 ,y:1 ,z:0}, {r:0, g:255, b:0}],
+                  [{x:0 ,y:0 ,z:1}, {x:0 ,y:1 ,z:0}, {x:0 ,y:0 ,z:0}, {r:0, g:255, b:0}],
 
-                  [{x:0 ,y:1 ,z:0}, {x:0 ,y:1 ,z:1}, {x:1 ,y:1 ,z:1}, {r:0, g:0, b:0}],
-                  [{x:0 ,y:1 ,z:0}, {x:1 ,y:1 ,z:1}, {x:1 ,y:1 ,z:0}, {r:0, g:0, b:0}],
+                  [{x:0 ,y:1 ,z:0}, {x:0 ,y:1 ,z:1}, {x:1 ,y:1 ,z:1}, {r:0, g:0, b:255}],
+                  [{x:0 ,y:1 ,z:0}, {x:1 ,y:1 ,z:1}, {x:1 ,y:1 ,z:0}, {r:0, g:0, b:255}],
 
-                  [{x:1 ,y:0 ,z:1}, {x:0 ,y:0 ,z:1}, {x:0 ,y:0 ,z:0}, {r:0, g:0, b:0}],
-                  [{x:1 ,y:0 ,z:1}, {x:0 ,y:0 ,z:0}, {x:1 ,y:0 ,z:0}, {r:0, g:0, b:0}]]
+                  [{x:1 ,y:0 ,z:1}, {x:0 ,y:0 ,z:1}, {x:0 ,y:0 ,z:0}, {r:0, g:255, b:255}],
+                  [{x:1 ,y:0 ,z:1}, {x:0 ,y:0 ,z:0}, {x:1 ,y:0 ,z:0}, {r:0, g:255, b:255}]]
 
 function drawTriangle (points, fill, colour) {
   if (canvas.getContext) {
@@ -79,7 +81,7 @@ function draw3DPolygon (points) {
   for(i=0; i<points.length; i++) {
     var triPoints = [];
     for (j=0; j<points[i].length - 1; j++) {
-      var translatedTri = rotationXMatrix(rotationZMatrix(points[i][j]));
+      var translatedTri = rotationYMatrix(rotationXMatrix(rotationZMatrix(points[i][j])));
       translatedTri = translatePoint(translatedTri, "z", 5);
       triPoints.push(translatedTri);
     }
@@ -132,7 +134,7 @@ function draw3DPolygon (points) {
       */
 
       var dotProduct = (normal.x * directionalLight.x) + (normal.y * directionalLight.y) + (normal.z * directionalLight.z);
-      var colour = {r: getAlpha(dotProduct), g: getAlpha(dotProduct), b: getAlpha(dotProduct)};
+      var colour = {r: getAlpha(dotProduct) * points[i][3].r, g: getAlpha(dotProduct) * points[i][3].g, b: getAlpha(dotProduct) * points[i][3].b};
 
       for(k=0; k<triPoints.length; k++) {
         ctx.fillRect((triPoints[k].x - 2.5) * (canvas.width/2),(triPoints[k].y - 2.5) * (canvas.height/2),5,5);
@@ -148,36 +150,39 @@ function draw3DPolygon (points) {
 }
 
 function getAlpha (dotProduct) {
-  dotProduct = Math.round(9 * dotProduct);
+  dotProduct = Math.round(10 * dotProduct);
   console.log(dotProduct);
   var num = 0.5;
   switch(10 - dotProduct) {
     case 0: 
-      num = 229.5;
+      num = 1;
       break;
     case 1: 
-      num = 204;
+      num = 0.9;
       break;
     case 2: 
-      num = 178.5;
+      num = 0.8;
       break;
     case 3: 
-      num = 153;
+      num = 0.7;
       break;
     case 4: 
-      num = 127.5;
+      num = 0.6;
       break;
     case 5: 
-      num = 102;
+      num = 0.5;
       break;
     case 6: 
-      num = 76.5;
+      num = 0.4;
       break;
     case 7: 
-      num = 51;
+      num = 0.3;
       break;
     case 8: 
-      num = 25.5;
+      num = 0.2;
+      break;
+    case 9: 
+      num = 0.1;
       break;
   }
   return num
