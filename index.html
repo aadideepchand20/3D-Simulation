@@ -8,10 +8,13 @@
   </head>
   <body>
     <canvas id="myCanvas" width="800" height="600"></canvas>
+    <input type="file" name="inputFile" id="inputFile">
+    <p id="output"></p>
     <div class="slidecontainer">
       <label for="fov">FOV</label>
-      <input type="range" min="45" max="135" value="90" class="slider" id="fov" name="fov">
+      <input type="range" min="45" max="180" value="90" class="slider" id="fov" name="fov">
     </div>
+    <script src="utility.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

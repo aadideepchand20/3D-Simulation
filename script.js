@@ -1,15 +1,19 @@
-let canvas = document.getElementById("myCanvas")
+let canvas = document.getElementById("myCanvas");
 var ctx = canvas.getContext('2d');
 
 ctx.translate((canvas.width/2),(canvas.height/2));
 
 let interval = setInterval(refresh, 100);
 let sliderFOV = document.getElementById("fov");
+let file = document.getElementById("inputFile");
+let output = document.getElementById("output")
 
 let shadeMode = 0;
 
-let angleX = 0;
-let angleY = 0;
+let pause = false;
+
+let angleX = toRadians(90);
+let angleY = toRadians(30);
 let angleZ = 0;
 
 let fNear = 0.1;
@@ -18,22 +22,92 @@ let fov = 90;
 let aspectratio = (canvas.height)/(canvas.width);
 let fovRad = 1/Math.tan(toRadians(fov/2));
 
+function refresh () {
+  if(pause != true) {
+    ctx.clearRect(-(canvas.width/2), -(canvas.height/2), canvas.width, canvas.height);
+    //angleX += toRadians(4);
+    angleY += toRadians(5);
+    //angleZ += toRadians(6);
+    draw3DPolygon(triangles);
+  }
+}
+
 sliderFOV.oninput = function() {
   fov = this.value;
   fovRad = 1 / Math.tan(toRadians(fov/2));
 }
 
-function refresh () {
-  ctx.clearRect(-(canvas.width/2), -(canvas.height/2), canvas.width, canvas.height);
-  angleX += toRadians(4);
-  angleY += toRadians(5);
-  angleZ += toRadians(6);
-  draw3DPolygon(cubeTris);
+file.onchange = function() {
+  pause = true;
+  var reader = new FileReader();
+  reader.readAsText(file.files[0]);
+  reader.onload = function() {
+    var data = reader.result;
+    var verticeData = [];
+    var faceData = [];
+    data = data.split(/([A-Za-z])/);
+    for(i=0; i<data.length; i++) {
+      if(data[i].length <= 1) {
+        if(data[i] == "v" || data[i] == "f") {
+          if(data[i + 1].length > 1) {
+            vertex = data[i + 1];
+            while(vertex[0] == " ") {
+              vertex = vertex.substring(1);
+            }
+            while(vertex[vertex.length - 1] == " ") {
+              vertex = vertex.slice(0,-1);
+            }
+            vertex = vertex.replaceAll(".", "dot");
+            vertex = vertex.replaceAll("-", "minus");
+            vertex = vertex.replaceAll(/[^a-zA-Z0-9 ]/g, "");
+            vertex = vertex.replaceAll("dot", ".");
+            vertex = vertex.replaceAll("minus", "-")
+            if(data[i] == "v") {
+              vertex = vertex.split(" ");
+              var values = [];
+              for(j=0; j<vertex.length; j++) {
+                if(/\d/.test(vertex[j])) {
+                  values.push(Number(vertex[j]));
+                }
+              }
+              verticeData.push({x:values[0], y:values[1], z:values[2]});
+            } else if(data[i] == "f") {
+              vertex = vertex.split(" ");
+              var values = [];
+              for(j=0; j<vertex.length; j++) {
+                if(/\d/.test(vertex[j])) {
+                  values.push(Number(vertex[j]));
+                }
+              }
+              if(values.length > 3) {
+                alert("The engine only supports models with tris");
+                return;
+              }
+              faceData.push(values);
+            }
+          }
+        }
+      }
+    }
+    for(k=0; k<faceData.length; k++) {
+      var thisTriangle = [];
+      thisTriangle.push(verticeData[faceData[k][0] - 1]);
+      thisTriangle.push(verticeData[faceData[k][1] - 1]);
+      thisTriangle.push(verticeData[faceData[k][2] - 1]);
+      thisTriangle.push({r: 255, g:0, b:0});
+      triangles.push(thisTriangle);
+    }
+    ctx.clearRect(-(canvas.width/2), -(canvas.height/2), canvas.width, canvas.height);
+    pause = false;
+    draw3DPolygon(triangles);
+  }
 }
+
+let triangles = [];
 
 const cameraPos = {x:0 ,y: 0, z:0};
 
-const cubeTris = [[{x:0 ,y:0 ,z:0}, {x:0 ,y:1 ,z:0}, {x:1 ,y:1 ,z:0}, {r:255, g:0, b:0}],
+let cubeTris = [[{x:0 ,y:0 ,z:0}, {x:0 ,y:1 ,z:0}, {x:1 ,y:1 ,z:0}, {r:255, g:0, b:0}],
                   [{x:0 ,y:0 ,z:0}, {x:1 ,y:1 ,z:0}, {x:1 ,y:0 ,z:0}, {r:255, g:0, b:0}],
 
                   [{x:1 ,y:0 ,z:0}, {x:1 ,y:1 ,z:0}, {x:1 ,y:1 ,z:1}, {r:255, g:255, b:0}],
@@ -51,44 +125,20 @@ const cubeTris = [[{x:0 ,y:0 ,z:0}, {x:0 ,y:1 ,z:0}, {x:1 ,y:1 ,z:0}, {r:255, g:
                   [{x:1 ,y:0 ,z:1}, {x:0 ,y:0 ,z:1}, {x:0 ,y:0 ,z:0}, {r:0, g:255, b:255}],
                   [{x:1 ,y:0 ,z:1}, {x:0 ,y:0 ,z:0}, {x:1 ,y:0 ,z:0}, {r:0, g:255, b:255}]]
 
-function drawTriangle (points, fill, colour) {
-  if (canvas.getContext) {
-
-    //Draws triangle on canvas
-    ctx.beginPath();
-    ctx.moveTo(points[0].x * (canvas.width/2), points[0].y * (canvas.height/2));
-    ctx.lineTo(points[1].x * (canvas.width/2), points[1].y * (canvas.height/2));
-    ctx.lineTo(points[2].x * (canvas.width/2), points[2].y * (canvas.height/2));
-    ctx.closePath();
-
-    /*DEBUG STUFF 
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    */
-
-    if(fill == 0) {
-      //Fills the triangle with the appropriate shade
-      var fillColour = String("rgb(" + colour.r + "," + colour.g + "," + colour.b + ")");
-      console.log(fillColour);
-      ctx.fillStyle = fillColour
-      ctx.fill();
-    } else {
-      //Draws the triangle edge instead of filling it
-      ctx.stroke();
-    }
-  }
-}
-
 function draw3DPolygon (points) {
   var i;
+  var trianglesToDraw = [];
   for(i=0; i<points.length; i++) {
+      if(typeof points[i][0] === 'undefined' || typeof points[i][1] === 'undefined' || typeof points[i][2] === 'undefined' || typeof points[i][3] === 'undefined') {
+        continue;
+      }
     var triPoints = [];
     for (j=0; j<points[i].length - 1; j++) {
       //Applies all rotation matrices to the point
-      var translatedTri = rotationYMatrix(rotationXMatrix(rotationZMatrix(points[i][j])));
+      var translatedTri = rotationYMatrix(rotationXMatrix(rotationZMatrix(points[i][j], angleZ), angleX), angleY);
       //Translates the points into view
-      translatedTri = translatePoint(translatedTri, "z", 5);
+      translatedTri = translatePoint(translatedTri, "z", 10);
+      translatedTri = translatePoint(translatedTri, "y", 8);
       //Adds the points to an array
       triPoints.push(translatedTri);
     }
@@ -130,8 +180,7 @@ function draw3DPolygon (points) {
       directionalLight.y /= lightNormaliser;
       directionalLight.z /= lightNormaliser;
 
-
-      /* DEBUG STUFF
+      /*DEBUG STUFF
       ctx.strokeStyle = "red";
       ctx.beginPath();
       ctx.moveTo(perspectiveprojectionMatrix(translatePoint(directionalLight, "z", 5)).x * (canvas.width/2),perspectiveprojectionMatrix(translatePoint(directionalLight, "z", 5)).y * (canvas.height/2));
@@ -157,160 +206,29 @@ function draw3DPolygon (points) {
         triPoints[k] = perspectiveprojectionMatrix(triPoints[k]);
       } 
 
-      //Draws the triangle to the screen
-      if(shadeMode == 0) {
-        drawTriangle(triPoints, 0, colour);
-      } else {
-        drawTriangle(triPoints, 1, colour);
-      }
+      triPoints.push(colour)
+      trianglesToDraw.push(triPoints);
     }
   }
-}
 
-function getColour (dotProduct) {
-  //Adjusts dot product
-  dotProduct = Math.round(10 * dotProduct);
-  //Checks which value to return
-  switch(10 - dotProduct) {
-    case 0: 
-      return 1;
-      break;
-    case 1: 
-      return 0.9;
-      break;
-    case 2: 
-      return 0.8;
-      break;
-    case 3: 
-      return 0.7;
-      break;
-    case 4: 
-      return 0.6;
-      break;
-    case 5: 
-      return 0.5;
-      break;
-    case 6: 
-      return 0.4;
-      break;
-    case 7: 
-      return 0.3;
-      break;
-    case 8: 
-      return 0.2;
-      break;
-    case 9: 
-      return 0.1;
-      break;
+  //Painters Algorithm 
+  trianglesToDraw.sort(function(a, b) {
+    var aAvg = (a[0].z + a[1].z + a[2].z)/3;
+    var bAvg = (b[0].z + b[1].z + b[2].z)/3
+    return bAvg - aAvg;
+  });
+
+
+  for(j=0; j<trianglesToDraw.length; j++) {
+    var trianglesToDrawPoints = [];
+    trianglesToDrawPoints.push(trianglesToDraw[j][0]);
+    trianglesToDrawPoints.push(trianglesToDraw[j][1]);
+    trianglesToDrawPoints.push(trianglesToDraw[j][2]);
+    var colour = trianglesToDraw[j][3];
+    if(shadeMode == 0) {
+      drawTriangle(trianglesToDrawPoints, 0, colour, canvas, ctx);
+    } else {
+      drawTriangle(trianglesToDrawPoints, 1, colour, canvas, ctx);
+    }
   }
-}
-
-function translatePoint (point, axis, amount) {
-  //Checks what axis to translate the point on
-  if(axis == "x") {
-    //Translates point relative to its previous position
-    return {x: point.x + amount, y: point.y, z: point.z};
-  } else if (axis == "y") {
-    //Translates point relative to its previous position
-    return {x: point.x, y: point.y + amount, z: point.z};
-  } else if (axis == "z") {
-    //Translates point relative to its previous position
-    return {x: point.x, y: point.y, z: point.z + amount};
-  } else {
-    //Translates point relative to its previous position
-    return point;
-  }
-}
-
-//Applies perspective projection matrix to turn the 3D points --> 2D points 
-function perspectiveprojectionMatrix (point) {
-  //Adds extra value to allow for matrix multiplication by 4x4
-  point = {x: point.x, y: point.y, z: point.z, m: 1};
-  //Perspective Matrix
-  var matrix = [[aspectratio * fovRad,0,0,0],
-                [0,fovRad,0,0],
-                [0,0,fFar / (fFar - fNear),1],
-                [0,0,(-(fFar) * fNear) / (fFar - fNear),0]]
-  //Calculates new x value
-  var x = (point.x * matrix[0][0]) + (point.y * matrix[1][0]) + (point.z * matrix[2][0]) + (point.m * matrix[3][0]);
-  //Calculates new y value
-  var y = (point.x * matrix[0][1]) + (point.y * matrix[1][1]) + (point.z * matrix[2][1]) + (point.m * matrix[3][1]);
-  //Calculates new z value
-  var z = (point.x * matrix[0][2]) + (point.y * matrix[1][2]) + (point.z * matrix[2][2]) + (point.m * matrix[3][2]);
-  //Calculates 'w' value
-  var w = (point.x * matrix[0][3]) + (point.y * matrix[1][3]) + (point.z * matrix[2][3]) + (point.m * matrix[3][3]);
-
-  //Checks whethe to normalise new points
-  if(w != 0) {
-    //Normalises the new points
-    return {x: x/w, y: y/w, z: z/w}; 
-  } else {
-    return {x: x, y: y, z: z};
-  }
-}
-
-function orthographicprojectionMatrix (point) {
-  var matrix = [[fovRad,0,0],
-                [0,fovRad * aspectratio,0],
-                [0,0,0]]
-  var x = (point.x * matrix[0][0]) + (point.y * matrix[0][1]) + (point.z * matrix[0][2]);
-  var y = (point.x * matrix[1][0]) + (point.y * matrix[1][1]) + (point.z * matrix[1][2]);
-  return {x: x, y: y};
-}
-
-function rotationXMatrix (point) {
-  //Rotation X Matrix
-  var matrix = [[1,0,0],
-                [0, Math.cos(angleX), Math.sin(angleX)],
-                [0, -(Math.sin(angleX)), Math.cos(angleX)]]
-  //Calculates new x value
-  var x = (point.x * matrix[0][0]) + (point.y * matrix[1][0]) + (point.z * matrix[2][0]);
-  //Calculates new y value
-  var y = (point.x * matrix[0][1]) + (point.y * matrix[1][1]) + (point.z * matrix[2][1]);
-  //Calculates new z value
-  var z = (point.x * matrix[0][2]) + (point.y * matrix[1][2]) + (point.z * matrix[2][2]);
-  return {x: x, y: y, z: z};
-}
-
-function rotationYMatrix (point) {
-  //Rotation Y Matrix
-  var matrix = [[Math.cos(angleY),0,Math.sin(angleY)],
-                [0,1,0],
-                [-(Math.sin(angleY)),0,Math.cos(angleY)]]
-  //Calculates new x value
-  var x = (point.x * matrix[0][0]) + (point.y * matrix[1][0]) + (point.z * matrix[2][0]);
-  //Calculates new y value
-  var y = (point.x * matrix[0][1]) + (point.y * matrix[1][1]) + (point.z * matrix[2][1]);
-  //Calculates new z value
-  var z = (point.x * matrix[0][2]) + (point.y * matrix[1][2]) + (point.z * matrix[2][2]);
-  return {x: x, y: y, z: z};
-}
-
-function rotationZMatrix (point) {
-  //Rotation Z Matrix
-  var matrix = [[Math.cos(angleZ),Math.sin(angleZ), 0],
-                [-(Math.sin(angleZ)), Math.cos(angleZ), 0],
-                [0,0,1]]
-  //Calculates new x value
-  var x = (point.x * matrix[0][0]) + (point.y * matrix[1][0]) + (point.z * matrix[2][0]);
-  //Calculates new y value
-  var y = (point.x * matrix[0][1]) + (point.y * matrix[1][1]) + (point.z * matrix[2][1]);
-  //Calculates new z value
-  var z = (point.x * matrix[0][2]) + (point.y * matrix[1][2]) + (point.z * matrix[2][2]);
-  return {x: x, y: y, z: z};
-}
-
-draw3DPolygon(cubeTris);
-
-
-
-
-
-//Utilities
-function toDegrees (angle) {
-  return angle * (180 / Math.PI);
-}
-
-function toRadians (angle) {
-  return angle * (Math.PI / 180);
 }
